@@ -1,0 +1,54 @@
+services:
+  db:
+    image: mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MW_DB_ROOT_PASSWORD:-wiki_root_pw}
+      MYSQL_DATABASE: rswiki
+      MYSQL_USER: wiki
+      MYSQL_PASSWORD: ${MW_DB_PASSWORD:-wiki_pw}
+    volumes:
+      - wiki-db:/var/lib/mysql
+    command: >-
+      --max-allowed-packet=64M
+      --innodb-buffer-pool-size=256M
+      --innodb-log-file-size=64M
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mediawiki:
+    # mediawiki:1.43 with LocalSettings.php and the logo baked in (Dockerfile):
+    # bind-mounted from the Windows disk, a stalled file share hung Apache.
+    build: .
+    image: rs-wiki:1.43-local
+    restart: unless-stopped
+    # The image stops Apache with SIGWINCH (graceful), which once hung with the
+    # container left "running" and unkillable: stop it outright instead.
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost/api.php?action=query&format=json"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    ports:
+      - "${WIKI_PORT:-8090}:80"
+    environment:
+      MW_SERVER: ${MW_SERVER:-http://localhost:8090}
+      MW_DB_PASSWORD: ${MW_DB_PASSWORD:-wiki_pw}
+      MW_SECRET_KEY: ${MW_SECRET_KEY:-change-me-in-production}
+      MW_UPGRADE_KEY: ${MW_UPGRADE_KEY:-change-me-in-production}
+    volumes:
+      - wiki-images:/var/www/html/images
+      # Read only by import.ps1 and reimport.ps1, never by a page request.
+      - ./data:/import:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  wiki-db:
+  wiki-images:

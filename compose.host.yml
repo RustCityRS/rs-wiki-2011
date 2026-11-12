@@ -1,0 +1,9 @@
+# Caps for the hosted copy, which shares a 1-CPU, 2 GB server with another site.
+# Its .env adds this file: COMPOSE_FILE=docker-compose.yml:compose.host.yml
+services:
+  db:
+    mem_limit: 640m
+    cpus: 0.75
+  mediawiki:
+    mem_limit: 768m
+    cpus: 0.75

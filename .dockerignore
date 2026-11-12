@@ -1,0 +1,6 @@
+# Build context: only what the Dockerfile copies.
+*
+!LocalSettings.php
+!wiki-logo.png
+!robots.txt
+!mpm_prefork.conf

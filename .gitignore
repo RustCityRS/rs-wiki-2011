@@ -1,0 +1,8 @@
+# The scrape, the staging database and the images: releases carry the built wiki.
+data/
+dist/
+.env
+__pycache__/
+*.log
+*.stackdump
+*.bak
